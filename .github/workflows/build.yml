@@ -1,0 +1,35 @@
+name: CI – Build & Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Restore solution
+        run: dotnet restore Khaos.Processing.Pipelines.sln
+
+      - name: Build solution
+        run: dotnet build Khaos.Processing.Pipelines.sln --configuration Release --no-restore
+
+      - name: Test (unit)
+        run: dotnet test Khaos.Processing.Pipelines.sln --configuration Release --no-build
+
+      - name: Test with coverage
+        run: pwsh ./scripts/test-with-coverage.ps1
