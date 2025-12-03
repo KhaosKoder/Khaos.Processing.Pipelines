@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <IsPackable>true</IsPackable>
+    <PackageId>KhaosCode.Processing.Pipelines.xxx</PackageId>
+    <Description>Composable high-performance processing pipelines with batch execution support.</Description>
+    <PackageTags>pipelines;workflow;batch;processing</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md"
+          Visible="false"
+          Pack="true"
+          PackagePath="/" />
+    <None Include="..\..\docs\**\*.*"
+          Visible="false"
+          Pack="true"
+          PackagePath="contentFiles/any/any/docs/%(RecursiveDir)%(Filename)%(Extension)" />
+        <None Include="buildTransitive\Khaos.Processing.Pipelines.docs.targets"
+          Visible="false"
+          Pack="true"
+          PackagePath="buildTransitive/" />
+        <None Include="buildTransitive\Khaos.Processing.Pipelines.targets"
+          Visible="false"
+          Pack="true"
+          PackagePath="buildTransitive/" />
+        <None Include="buildTransitive\KhaosCode.Processing.Pipelines.xxx.targets"
+          Visible="false"
+          Pack="true"
+          PackagePath="buildTransitive/" />
+  </ItemGroup>
+
+</Project>

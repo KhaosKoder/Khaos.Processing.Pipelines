@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <KhaosDocsPackageName>KhaosCode.Processing.Pipelines.xxx</KhaosDocsPackageName>
+  </PropertyGroup>
+
+  <Target Name="KhaosProcessingPipelines_CopyDocs"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(SolutionDir)' != '' and Exists('$(SolutionDir)') and '$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <_KhaosDocFiles Include="$(MSBuildThisFileDirectory)..\contentFiles\any\any\docs\**\*.*" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_KhaosDocsTarget>$(SolutionDir)docs\$(KhaosDocsPackageName)</_KhaosDocsTarget>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_KhaosDocsTarget)" Condition="'@(_KhaosDocFiles)' != ''" />
+    <Copy SourceFiles="@(_KhaosDocFiles)"
+          DestinationFiles="@(_KhaosDocFiles->'$(_KhaosDocsTarget)\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(_KhaosDocFiles)' != ''" />
+  </Target>
+</Project>
