@@ -35,7 +35,7 @@ This solution uses **Semantic Versioning 2.0.0**, Git tags, and **MinVer** to gu
    ```powershell
    dotnet pack -c Release
    ```
-5. Verify `artifacts/` (or `bin/Release`) contains `.nupkg` files whose names all include the same version (for example `KhaosCode.Processing.Pipelines.xxx.1.4.0.nupkg`).
+5. Verify `artifacts/` (or `bin/Release`) contains `.nupkg` files whose names all include the same version (for example `KhaosCode.Processing.Pipelines.1.4.0.nupkg`).
 6. Publish to NuGet (or another feed) via `dotnet nuget push` or GitHub Actions as preferred.
 
 ## 4. Pre-release and Development Builds
@@ -71,4 +71,4 @@ Then tag again with the correct number.
 
 ## 7. Relation to Other Libraries
 
-Khaos ships multiple independent libraries. Each repository manages its own Git tags and versions. Downstream aggregators or meta-packages should depend on explicit version ranges (for example `KhaosCode.Processing.Pipelines.xxx >= 1.2.0`) and update them as needed. A release in this repo does **not** automatically bump versions in other Khaos products.
+Khaos ships multiple independent libraries. Each repository manages its own Git tags and versions. Downstream aggregators or meta-packages should depend on explicit version ranges (for example `KhaosCode.Processing.Pipelines >= 1.2.0`) and update them as needed. A release in this repo does **not** automatically bump versions in other Khaos products.

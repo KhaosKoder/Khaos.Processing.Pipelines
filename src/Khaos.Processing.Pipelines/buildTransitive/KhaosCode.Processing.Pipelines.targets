@@ -1,0 +1,4 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)Khaos.Processing.Pipelines.docs.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory)Khaos.Processing.Pipelines.docs.targets')" />
+</Project>

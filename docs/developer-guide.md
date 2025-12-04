@@ -7,7 +7,7 @@ This document explains how to extend and maintain the Khaos processing pipeline 
 - `src/Khaos.Processing.Pipelines`: Primary production library. Keep public APIs stable and well-documented.
 - `tests/Khaos.Processing.Pipelines.Tests`: xUnit test suite that exercises pipelines, steps, context, and the batch executor. All new code must be covered here.
 - `scripts/`: PowerShell helper scripts for common workflows.
-- `docs/`: Markdown documentation bundled inside the NuGet package and automatically copied into the consumer's solution under `SolutionName/docs/KhaosCode.Processing.Pipelines.xxx` when the package is restored.
+- `docs/`: Markdown documentation bundled inside the NuGet package and automatically copied into the consumer's solution under `SolutionName/docs/KhaosCode.Processing.Pipelines` when the package is restored.
 
 ## Coding Guidelines
 
@@ -22,7 +22,7 @@ This document explains how to extend and maintain the Khaos processing pipeline 
 
 3. **Docs in Packages**
    - Every Markdown file inside `docs/` is packed into the NuGet package under `contentFiles/any/any/docs/...`.
-   - The package exposes a `buildTransitive` target that copies those files into the consumer solution (`<SolutionDir>/docs/KhaosCode.Processing.Pipelines.xxx`). Add or update docs here—no extra configuration is required.
+   - The package exposes a `buildTransitive` target that copies those files into the consumer solution (`<SolutionDir>/docs/KhaosCode.Processing.Pipelines`). Add or update docs here—no extra configuration is required.
 
 4. **Analyzers & Style**
    - Nullable reference types and implicit usings are enforced solution-wide via `Directory.Build.props`.
