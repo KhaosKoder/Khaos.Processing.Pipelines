@@ -1,21 +1,21 @@
 # Khaos.Processing.Pipelines
 
-Composable, testable, high-throughput processing pipelines for .NET. This project ships the NuGet package `KhaosCode.Processing.Pipelines.xxx`, which contains:
+Composable, testable, high-throughput processing pipelines for .NET. This project ships the NuGet package `KhaosCode.Processing.Pipelines`, which contains:
 
 - A fluent builder for chaining `IPipelineStep<TIn, TOut>` implementations.
 - Optional batch-aware steps (`IBatchAwareStep<TIn, TOut>`) for more efficient bulk operations.
 - A parallel-ready `BatchPipelineExecutor<TIn, TOut>` with pluggable metrics instrumentation.
-- A documentation delivery system: every package install copies the contents of `docs/` into `Solution/docs/KhaosCode.Processing.Pipelines.xxx` inside the consuming solution.
+- A documentation delivery system: every package install copies the contents of `docs/` into `Solution/docs/KhaosCode.Processing.Pipelines` inside the consuming solution.
 
 Use it when you need deterministic, instrumented workflows that can run record-by-record or as batches, without dragging a full workflow engine into your process.
 
 ## Installation
 
 ```powershell
-dotnet add package KhaosCode.Processing.Pipelines.xxx
+dotnet add package KhaosCode.Processing.Pipelines
 ```
 
-After the first restore, check `<SolutionRoot>/docs/KhaosCode.Processing.Pipelines.xxx` for the bundled guides (`developer-guide.md`, `user-guide.md`, `versioning-guide.md`).
+After the first restore, check `<SolutionRoot>/docs/KhaosCode.Processing.Pipelines` for the bundled guides (`developer-guide.md`, `user-guide.md`, `versioning-guide.md`).
 
 ## Quick Start
 

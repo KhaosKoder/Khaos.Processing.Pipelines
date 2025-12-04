@@ -1,18 +1,18 @@
 # Khaos.Processing.Pipelines – User Guide
 
-This guide is for application developers consuming the `KhaosCode.Processing.Pipelines.xxx` NuGet package.
+This guide is for application developers consuming the `KhaosCode.Processing.Pipelines` NuGet package.
 
 ## Installation
 
 ```powershell
 # from your project directory
-dotnet add package KhaosCode.Processing.Pipelines.xxx
+dotnet add package KhaosCode.Processing.Pipelines
 ```
 
 After the first restore the package copies its documentation into your solution at:
 
 ```
-<SolutionRoot>/docs/KhaosCode.Processing.Pipelines.xxx
+<SolutionRoot>/docs/KhaosCode.Processing.Pipelines
 ```
 
 Check that folder for the latest guides bundled with the package version you installed.
@@ -73,7 +73,7 @@ Use descriptive keys (for example `"user:region"`) to avoid collisions between s
 
 ## Documentation in Your Solution
 
-Every NuGet install copies the packaged docs into `Solution/docs/KhaosCode.Processing.Pipelines.xxx`. Keep this folder under source control if you want your teammates to have the same references, or regenerate it by clearing the folder and running `dotnet restore` again.
+Every NuGet install copies the packaged docs into `Solution/docs/KhaosCode.Processing.Pipelines`. Keep this folder under source control if you want your teammates to have the same references, or regenerate it by clearing the folder and running `dotnet restore` again.
 
 ## Troubleshooting
 

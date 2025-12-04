@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <KhaosDocsPackageName>KhaosCode.Processing.Pipelines.xxx</KhaosDocsPackageName>
+    <KhaosDocsPackageName>KhaosCode.Processing.Pipelines</KhaosDocsPackageName>
   </PropertyGroup>
 
   <Target Name="KhaosProcessingPipelines_CopyDocs"
