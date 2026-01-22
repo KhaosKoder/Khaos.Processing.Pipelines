@@ -2,7 +2,8 @@
   <PropertyGroup>
     <Product>Khaos.Processing.Pipelines</Product>
     <Company>Khaos</Company>
-    <Authors>Khaos Engineering</Authors>
+    <Authors>Khaos</Authors>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)artifacts\</PackageOutputPath>
     <PackageProjectUrl>https://github.com/KhaosOrg/Khaos.Processing.Pipelines</PackageProjectUrl>
     <RepositoryUrl>https://github.com/KhaosOrg/Khaos.Processing.Pipelines</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

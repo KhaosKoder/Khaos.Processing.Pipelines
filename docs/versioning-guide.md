@@ -1,74 +1,142 @@
-# Versioning Guide – Khaos.Processing.Pipelines
+# Versioning Guide
 
-This solution uses **Semantic Versioning 2.0.0**, Git tags, and **MinVer** to guarantee consistent package versions across every packable project. The canonical version number is derived from Git history, never from hard-coded `<Version>` elements inside `.csproj` files.
+## Overview
 
-## 1. Overview
+This solution uses **Semantic Versioning 2.0.0** with Git tags as the single source of truth. We rely on [MinVer](https://github.com/adamralph/minver) (configured in `Directory.Build.props`) to compute the version during every build, pack, and publish. All packable projects within this solution share the exact same version for a given commit. Test and sample projects inherit the configuration but remain non-packable.
 
-- **SemVer 2.0.0** (`MAJOR.MINOR.PATCH`) governs every public release.
-- **Git tags** are the single source of truth. Tags follow the product-specific prefix `Khaos.Processing.Pipelines/v`.
-- **MinVer** (configured in `Directory.Build.props`) computes `Version`, `PackageVersion`, `AssemblyVersion`, and `FileVersion` for all packable projects in the solution. Non-packable projects (tests, samples) inherit the build logic but do not emit packages.
-- Every packable library built from the same commit receives the **same version number**.
+### Configuration Summary
 
-## 2. Semantic Versioning Rules
+| Setting | Value |
+| --- | --- |
+| Tag Prefix | `Khaos.Processing.Pipelines/v` |
+| Auto Increment | `minor` |
+| Default Pre-release | `alpha.0` |
 
-| Segment | When to bump | Example in this solution |
-| --- | --- | --- |
-| **MAJOR** | Public API or behavioral breaking changes: removing/renaming public types, changing method signatures, altering default execution semantics. | Removing `BatchPipelineExecutor.ProcessBatchAsync` overloads, changing default parallelism semantics. |
-| **MINOR** | Backwards-compatible features: new pipeline steps, additional options, non-breaking improvements. | Adding a new `IBatchAwareStep` helper or optional metrics hooks. |
-| **PATCH** | Bug fixes and safe tweaks: performance optimizations, analyzer fixes, documentation updates, refactors that do not change behavior. | Fixing `PipelineContext.TryGet` edge cases or tightening exception messages. |
+Example release tag: `Khaos.Processing.Pipelines/v1.4.0`
 
-## 3. Tagging and Releasing
+## Versioning Scripts
 
-1. Ensure the working tree is clean and all tests pass:
-   ```powershell
-   pwsh ./scripts/clean.ps1
-   pwsh ./scripts/build.ps1
-   pwsh ./scripts/test-with-coverage.ps1
-   ```
-2. Choose the new SemVer per the rules above (for example `1.4.0`).
-3. Create and push the Git tag (replace the version with your chosen number):
-   ```powershell
-   git tag Khaos.Processing.Pipelines/v1.4.0
-   git push origin Khaos.Processing.Pipelines/v1.4.0
-   ```
-4. Build and pack from the repo root:
-   ```powershell
-   dotnet pack -c Release
-   ```
-5. Verify `artifacts/` (or `bin/Release`) contains `.nupkg` files whose names all include the same version (for example `KhaosCode.Processing.Pipelines.1.4.0.nupkg`).
-6. Publish to NuGet (or another feed) via `dotnet nuget push` or GitHub Actions as preferred.
+This solution provides two scripts in the `scripts/` folder to manage versions:
 
-## 4. Pre-release and Development Builds
+### Get-Version.ps1
 
-- Commits after the last release tag automatically produce pre-release versions like `1.5.0-alpha.3` thanks to MinVer’s `alpha` default phase.
-- These identifiers are suitable for internal testing feeds but should not be considered official releases.
-- To cut a new stable release, tag the commit; MinVer will drop the pre-release suffix.
+Displays current version information:
 
-## 5. Do’s and Don’ts
-
-**DO**
-- Change the version only by creating Git tags with the `Khaos.Processing.Pipelines/v` prefix.
-- Follow the SemVer guidelines when choosing MAJOR vs MINOR vs PATCH.
-- Keep the working tree clean and tested before tagging.
-
-**DO NOT**
-- Edit `<Version>`, `<PackageVersion>`, `<AssemblyVersion>`, or `<FileVersion>` in any `.csproj`.
-- Override MinVer properties to “force” a version for local experiments.
-- Create ad-hoc tags without the product prefix; downstream automation relies on the namespace.
-
-If you create a wrong tag, delete and re-create it:
 ```powershell
-git tag -d Khaos.Processing.Pipelines/v1.2.3
-git push origin :refs/tags/Khaos.Processing.Pipelines/v1.2.3
+.\scripts\Get-Version.ps1
 ```
-Then tag again with the correct number.
 
-## 6. Cheat Sheet
+Output includes:
+- Tag prefix configuration
+- Latest release tag
+- Recent release history
+- Current commit and working tree status
 
-- **Breaking change**: removed a public method → tag `Khaos.Processing.Pipelines/v2.0.0`.
-- **New feature**: added a non-breaking pipeline step → tag `Khaos.Processing.Pipelines/v1.3.0`.
-- **Bug fix**: resolved a null-reference in an existing step → tag `Khaos.Processing.Pipelines/v1.2.1`.
+### Tag-Release.ps1
 
-## 7. Relation to Other Libraries
+Creates release tags:
 
-Khaos ships multiple independent libraries. Each repository manages its own Git tags and versions. Downstream aggregators or meta-packages should depend on explicit version ranges (for example `KhaosCode.Processing.Pipelines >= 1.2.0`) and update them as needed. A release in this repo does **not** automatically bump versions in other Khaos products.
+```powershell
+# Create a tag locally
+.\scripts\Tag-Release.ps1 -Version 1.2.0
+
+# Create and push to origin
+.\scripts\Tag-Release.ps1 -Version 1.2.0 -Push
+
+# Overwrite an existing tag
+.\scripts\Tag-Release.ps1 -Version 1.2.0 -Push -Force
+```
+
+## Semantic Versioning Rules
+
+- **MAJOR** (`X.y.z`): Breaking changes in public API or behavior.
+  - Examples: removing or renaming a public type, changing method signatures, altering behavior in a way that breaks existing consumers.
+- **MINOR** (`x.Y.z`): Backwards-compatible feature additions.
+  - Examples: adding new options, methods, events, or features that do not break existing code.
+- **PATCH** (`x.y.Z`): Backwards-compatible fixes and improvements.
+  - Examples: bug fixes, performance tuning, documentation updates, internal refactors without API changes.
+
+## Release Workflow
+
+1. Ensure the working tree is clean:
+   ```powershell
+   .\scripts\Get-Version.ps1
+   ```
+
+2. Run all tests:
+   ```powershell
+   .\scripts\Test.ps1
+   # or with coverage
+   .\scripts\Test-Coverage.ps1
+   ```
+
+3. Decide the new SemVer (MAJOR.MINOR.PATCH) according to the rules above.
+
+4. Create and push the release tag:
+   ```powershell
+   .\scripts\Tag-Release.ps1 -Version 1.2.0 -Push
+   ```
+
+5. Build and pack:
+   ```powershell
+   .\scripts\Pack.ps1 -Configuration Release
+   ```
+
+6. Verify the package version in the `artifacts/` folder matches your tag.
+
+7. Publish the packages to your NuGet feed.
+
+## Pre-release and Development Builds
+
+- Commits after the latest tag automatically produce pre-release versions such as `1.3.0-alpha.0.1`, `1.3.0-alpha.0.2`, etc.
+- These builds are suitable for internal consumption, previews, or testing feeds but should not be published as official releases.
+- To publish a preview release, use a pre-release tag like `1.4.0-beta.1`:
+  ```powershell
+  .\scripts\Tag-Release.ps1 -Version 1.4.0-beta.1 -Push
+  ```
+
+## Do's and Don'ts
+
+**Do:**
+- ✅ Use `Get-Version.ps1` to check current version before releasing
+- ✅ Use `Tag-Release.ps1` to create version tags
+- ✅ Follow the SemVer rules when choosing MAJOR vs MINOR vs PATCH
+- ✅ Ensure tags are pushed to origin so CI sees the same version
+
+**Don't:**
+- ❌ Manually edit `<Version>`, `<PackageVersion>`, etc. in project files
+- ❌ Create tags that don't follow the `{ProductName}/vX.Y.Z` pattern
+- ❌ Forget to push tags to origin
+
+## Cheat Sheet
+
+| Scenario | Command |
+| --- | --- |
+| Check current version | `.\scripts\Get-Version.ps1` |
+| Breaking change release | `.\scripts\Tag-Release.ps1 -Version 2.0.0 -Push` |
+| New feature release | `.\scripts\Tag-Release.ps1 -Version 1.3.0 -Push` |
+| Bug fix / patch release | `.\scripts\Tag-Release.ps1 -Version 1.2.1 -Push` |
+| Preview/beta release | `.\scripts\Tag-Release.ps1 -Version 1.4.0-beta.1 -Push` |
+
+## Relation to Other Khaos Libraries
+
+All Khaos.* repositories follow this same versioning pattern:
+- Each solution has its own tag prefix (e.g., `Khaos.Logging/v`, `Khaos.Kafka/v`)
+- Each solution maintains its own version and release cadence
+- Cross-solution dependencies use standard NuGet package references
+
+## Technical Details
+
+MinVer configuration in `Directory.Build.props`:
+
+```xml
+<PropertyGroup>
+  <MinVerTagPrefix>Khaos.Processing.Pipelines/v</MinVerTagPrefix>
+  <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+  <MinVerDefaultPreReleaseIdentifiers>alpha.0</MinVerDefaultPreReleaseIdentifiers>
+</PropertyGroup>
+```
+
+This ensures:
+- `Version`, `PackageVersion`, `AssemblyVersion`, and `FileVersion` are all derived from Git tags
+- Consistent versioning across all packable projects in the solution
