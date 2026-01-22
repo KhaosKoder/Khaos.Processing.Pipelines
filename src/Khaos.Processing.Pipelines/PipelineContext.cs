@@ -1,11 +1,12 @@
 using System.Collections.Concurrent;
+using Khaos.Pipeline.Abstractions;
 
 namespace Khaos.Processing.Pipelines;
 
 /// <summary>
 /// Provides per-batch shared state visible to every pipeline step.
 /// </summary>
-public sealed class PipelineContext
+public sealed class PipelineContext : IPipelineContext
 {
     private readonly ConcurrentDictionary<string, object?> _items = new(StringComparer.Ordinal);
 
@@ -67,5 +68,39 @@ public sealed class PipelineContext
         }
 
         _items[key] = value;
+    }
+
+    /// <summary>
+    /// Checks whether a key exists in the context.
+    /// </summary>
+    public bool Contains(string key)
+    {
+        if (key is null)
+        {
+            throw new ArgumentNullException(nameof(key));
+        }
+
+        return _items.ContainsKey(key);
+    }
+
+    /// <summary>
+    /// Removes a key from the context.
+    /// </summary>
+    public bool Remove(string key)
+    {
+        if (key is null)
+        {
+            throw new ArgumentNullException(nameof(key));
+        }
+
+        return _items.TryRemove(key, out _);
+    }
+
+    /// <summary>
+    /// Clears all items from the context.
+    /// </summary>
+    public void Clear()
+    {
+        _items.Clear();
     }
 }

@@ -34,6 +34,22 @@ public readonly struct StepOutcome<TOut>
     /// Creates an abort outcome, signalling downstream steps should be skipped for the current record.
     /// </summary>
     public static StepOutcome<TOut> Abort() => new(StepOutcomeKind.Abort, default);
+
+    /// <summary>
+    /// Implicit conversion to the abstractions type.
+    /// </summary>
+    public static implicit operator Khaos.Pipeline.Abstractions.StepOutcome<TOut>(StepOutcome<TOut> outcome)
+        => outcome.Kind == StepOutcomeKind.Continue
+            ? Khaos.Pipeline.Abstractions.StepOutcome<TOut>.Continue(outcome.Value!)
+            : Khaos.Pipeline.Abstractions.StepOutcome<TOut>.Abort();
+
+    /// <summary>
+    /// Implicit conversion from the abstractions type.
+    /// </summary>
+    public static implicit operator StepOutcome<TOut>(Khaos.Pipeline.Abstractions.StepOutcome<TOut> outcome)
+        => outcome.Kind == Khaos.Pipeline.Abstractions.StepOutcomeKind.Continue
+            ? Continue(outcome.Value!)
+            : Abort();
 }
 
 /// <summary>

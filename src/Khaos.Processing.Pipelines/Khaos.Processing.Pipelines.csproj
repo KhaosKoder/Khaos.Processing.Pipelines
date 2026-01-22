@@ -14,6 +14,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Khaos.Pipeline.Abstractions\src\Khaos.Pipeline.Abstractions\Khaos.Pipeline.Abstractions.csproj"
+                      Condition="Exists('..\..\..\Khaos.Pipeline.Abstractions\src\Khaos.Pipeline.Abstractions\Khaos.Pipeline.Abstractions.csproj')" />
+    <PackageReference Include="KhaosCode.Pipeline.Abstractions" Version="0.*"
+                      Condition="!Exists('..\..\..\Khaos.Pipeline.Abstractions\src\Khaos.Pipeline.Abstractions\Khaos.Pipeline.Abstractions.csproj')" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\..\README.md"
           Visible="false"
           Pack="true"
