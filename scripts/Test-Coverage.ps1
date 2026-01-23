@@ -87,7 +87,9 @@ try {
     Write-Host ""
 
     # Step 3: Find coverage files
-    $coverageFiles = Get-ChildItem -Path $coverageDir -Recurse -Filter 'coverage.cobertura.xml' -ErrorAction SilentlyContinue
+    $coverageFiles = @(
+        Get-ChildItem -Path $coverageDir -Recurse -Filter 'coverage.cobertura.xml' -ErrorAction SilentlyContinue
+    )
 
     if (-not $coverageFiles -or $coverageFiles.Count -eq 0) {
         Write-Warning "No coverage files were generated. Ensure your test projects have the correct coverage packages."
@@ -107,7 +109,8 @@ try {
     $reportArgs = @(
         "-reports:$coverageFilesList",
         "-targetdir:$reportDir",
-        "-reporttypes:Html;Cobertura;TextSummary"
+        "-reporttypes:Html;Cobertura;TextSummary",
+        "-filefilters:-*.g.cs;-*\\obj\\*"
     )
 
     dotnet tool run reportgenerator @reportArgs
