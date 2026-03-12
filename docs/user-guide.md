@@ -71,6 +71,154 @@ The default constructor uses no-op metrics.
 
 Use descriptive keys (for example `"user:region"`) to avoid collisions between steps.
 
+## Command Queue Dispatch
+
+For scenarios requiring partitioned command routing (actor-like dispatch, CQRS command side, partitioned state management), use the `Commands` namespace:
+
+```csharp
+using Khaos.Processing.Pipelines.Commands;
+
+// Define a routable command
+public record CloseSessionCommand(string NID, Guid SessionGuid) 
+    : IRoutableCommand<string>
+{
+    public string RoutingKey => NID;
+}
+
+// Create a dispatcher
+var dispatcher = CommandDispatcher.Create<string, CloseSessionCommand>()
+    .WithPartitionCount(64)           // Must be power of 2
+    .WithQueueCapacity(10_000)         // Per-partition capacity
+    .WithBackpressure(BackpressureBehavior.Wait, TimeSpan.FromSeconds(30))
+    .Build();
+
+// Producer: dispatch commands (thread-safe from multiple threads)
+var result = await dispatcher.DispatchAsync(command, ct);
+if (result == DispatchResult.Success)
+    // Command enqueued
+else if (result == DispatchResult.Rejected)
+    // Queue full, behavior was Reject
+else if (result == DispatchResult.Timeout)
+    // Wait timed out
+
+// Consumer: process commands from a partition
+var queue = dispatcher.GetPartitionQueue(partitionIndex);
+while (!ct.IsCancellationRequested)
+{
+    var cmd = await queue.DequeueAsync(ct);
+    await ProcessAsync(cmd);
+}
+```
+
+### Key Concepts
+
+- **Routing Key Affinity**: Commands with the same `RoutingKey` always route to the same partition, preserving ordering per key.
+- **Single Consumer per Partition**: Each partition queue is designed for exactly one consumer, guaranteeing FIFO order within the partition.
+- **Lock-Free Enqueue**: Uses `Channel<T>` internally for high-throughput, lock-free dispatch from multiple producers.
+- **Backpressure Modes**:
+  - `Wait`: Block asynchronously until space is available (with configurable timeout).
+  - `Reject`: Return `DispatchResult.Rejected` immediately when full.
+  - `DropOldest`: Drop the oldest command to make room.
+
+### Monitoring
+
+```csharp
+// Get fill percentages for all partitions
+IReadOnlyList<int> fills = dispatcher.GetPartitionFillPercentages();
+
+// Get aggregate statistics
+var stats = dispatcher.GetStatistics();
+console.WriteLine($"Queued: {stats.TotalQueuedCommands}, Fill: {stats.OverallFillPercentage}%");
+```
+
+## Flush Policy & Persistence
+
+For scenarios requiring coordinated persistence of dirty state (aggregators, caches, actor state), use the `Persistence` namespace:
+
+```csharp
+using Khaos.Processing.Pipelines.Persistence;
+
+// Create a flush coordinator with time and count policies
+var coordinator = FlushCoordinator.Create<string>()
+    .WithTimeBasedFlush(TimeSpan.FromMinutes(5))
+    .WithCountBasedFlush(1000)
+    .WithShutdownFlush()
+    .Build();
+```
+
+### Marking Dirty State
+
+```csharp
+// Mark keys as dirty when their state changes
+coordinator.MarkDirty("session-123");
+coordinator.MarkDirty("session-456");
+
+// Check if a specific key is dirty
+if (coordinator.IsDirty("session-123"))
+    Console.WriteLine("Session has uncommitted changes");
+
+// Get all dirty keys
+IReadOnlyCollection<string> dirtyKeys = coordinator.GetDirtyKeys();
+```
+
+### Checking and Flushing
+
+```csharp
+// Periodic check - evaluates policies and flushes if needed
+var result = await coordinator.CheckAndFlushAsync(
+    async keys =>
+    {
+        foreach (var key in keys)
+            await PersistAsync(key);
+    },
+    cancellationToken);
+
+if (result.Flushed)
+    Console.WriteLine($"Flushed {result.ItemCount} items, triggered by: {result.TriggeringPolicy}");
+```
+
+### Force Flush & Shutdown
+
+```csharp
+// Force immediate flush regardless of policies
+await coordinator.ForceFlushAsync(PersistAllAsync, ct);
+
+// Signal shutdown for graceful persistence
+coordinator.SetShutdown();
+var shutdownResult = await coordinator.CheckAndFlushAsync(PersistAllAsync, ct);
+```
+
+### Available Policies
+
+| Policy | Trigger Condition |
+|--------|-------------------|
+| `TimeBasedFlushPolicy` | Elapsed time since last flush exceeds threshold |
+| `CountBasedFlushPolicy` | Dirty count meets or exceeds threshold |
+| `MemoryPressureFlushPolicy` | Estimated dirty memory exceeds threshold |
+| `DirtyRatioFlushPolicy` | Dirty/total ratio exceeds threshold |
+| `ExternalTriggerFlushPolicy` | External signal via `SetExternalTrigger()` |
+| `ShutdownFlushPolicy` | Shutdown signal via `SetShutdown()` |
+
+### Memory Estimation
+
+For memory-pressure policies, provide a memory estimator:
+
+```csharp
+var coordinator = FlushCoordinator.Create<string>()
+    .WithMemoryEstimator(() => _cache.EstimatedMemoryBytes)
+    .WithMemoryPressureFlush(512 * 1024 * 1024) // 512 MB
+    .Build();
+```
+
+### Statistics
+
+```csharp
+var stats = coordinator.GetStatistics();
+Console.WriteLine($"Total flushes: {stats.TotalFlushes}");
+Console.WriteLine($"Total items flushed: {stats.TotalItemsFlushed}");
+Console.WriteLine($"Last flush: {stats.LastFlushTime}");
+```
+
 ## Documentation in Your Solution
 
 Every NuGet install copies the packaged docs into `Solution/docs/KhaosCode.Processing.Pipelines`. Keep this folder under source control if you want your teammates to have the same references, or regenerate it by clearing the folder and running `dotnet restore` again.

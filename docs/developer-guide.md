@@ -20,11 +20,29 @@ This document explains how to extend and maintain the Khaos processing pipeline 
    - `BatchPipelineExecutor<TIn, TOut>` orchestrates per-step execution, optional parallelism, and instrumentation. Reuse it instead of crafting bespoke loops.
    - All new metrics integrations should go through `IPipelineMetrics` and its scope objects to keep instrumentation pluggable.
 
-3. **Docs in Packages**
+3. **Command Queue & Dispatch**
+   - The `Commands` namespace provides partitioned command routing via `IRoutedCommandDispatcher<TKey, TCommand>`.
+   - Commands implement `IRoutableCommand<TKey>` to specify their routing key.
+   - Use `CommandDispatcher.Create<TKey, TCommand>()` for fluent configuration.
+   - Internal implementation uses `Channel<T>` for lock-free, bounded queues (`BoundedCommandQueue<T>`).
+   - Partition count must be a power of 2 for efficient bit-masked modulo routing.
+   - Backpressure modes: `Wait` (with timeout), `Reject`, or `DropOldest`.
+
+4. **Flush Policy & Persistence**
+   - The `Persistence` namespace provides flush coordination for stateful aggregation scenarios.
+   - `IFlushPolicy` is stateless; implement `ShouldFlush(in FlushContext)` to add custom triggers.
+   - Built-in policies: `TimeBasedFlushPolicy`, `CountBasedFlushPolicy`, `MemoryPressureFlushPolicy`, `DirtyRatioFlushPolicy`, `ExternalTriggerFlushPolicy`, `ShutdownFlushPolicy`.
+   - `CompositeFlushPolicy` combines multiple policies with OR semantics and provides `GetTriggeringPolicies()` for diagnostics.
+   - `FlushCoordinator<TKey>` tracks dirty state using `ConcurrentDictionary` for thread safety.
+   - Use `FlushCoordinator.Create<TKey>()` for fluent builder configuration.
+   - Inject `TimeProvider` for deterministic time-based testing; uses `TimeProvider.System` by default.
+   - All policies check `DirtyCount > 0` before triggering (except `CountBasedFlushPolicy` which uses `>=`).
+
+5. **Docs in Packages**
    - Every Markdown file inside `docs/` is packed into the NuGet package under `contentFiles/any/any/docs/...`.
    - The package exposes a `buildTransitive` target that copies those files into the consumer solution (`<SolutionDir>/docs/KhaosCode.Processing.Pipelines`). Add or update docs here—no extra configuration is required.
 
-4. **Analyzers & Style**
+6. **Analyzers & Style**
    - Nullable reference types and implicit usings are enforced solution-wide via `Directory.Build.props`.
    - Keep files ASCII-only unless an existing file already uses non-ASCII content for a justified reason (for example, localized samples).
 

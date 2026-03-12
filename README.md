@@ -60,6 +60,82 @@ await executor.ProcessBatchAsync(orders, pipeline, context, options, cancellatio
 - Batch steps that also implement `IBatchAwareStep<TIn, TOut>` receive `InvokeBatchAsync`, allowing you to materialize results or call external systems once per batch.
 - Metrics hooks (`IPipelineMetrics`, `IPipelineBatchScope`, `IPipelineStepScope`) let you emit telemetry per batch/step.
 
+## Command Queue Dispatch
+
+For scenarios requiring partitioned command routing with backpressure, use the `Commands` namespace:
+
+```csharp
+using Khaos.Processing.Pipelines.Commands;
+
+// Define a routable command
+public record CloseSessionCommand(string NID, Guid SessionGuid) 
+    : IRoutableCommand<string>
+{
+    public string RoutingKey => NID;
+}
+
+// Create a dispatcher with 64 partitions
+var dispatcher = CommandDispatcher.Create<string, CloseSessionCommand>()
+    .WithPartitionCount(64)
+    .WithQueueCapacity(10_000)
+    .WithBackpressure(BackpressureBehavior.Wait, TimeSpan.FromSeconds(30))
+    .Build();
+
+// Producer: dispatch commands (thread-safe)
+var result = await dispatcher.DispatchAsync(new CloseSessionCommand("NID123", sessionGuid), ct);
+if (result != DispatchResult.Success)
+    // Handle rejection, timeout, or cancellation
+
+// Consumer: process commands from a partition
+var queue = dispatcher.GetPartitionQueue(partitionIndex);
+while (!ct.IsCancellationRequested)
+{
+    var command = await queue.DequeueAsync(ct);
+    await ProcessCommandAsync(command);
+}
+```
+
+Key features:
+- **Partition-based routing**: Commands with the same routing key always go to the same partition, preserving ordering.
+- **Lock-free dispatch**: Uses `Channel<T>` internally for high-throughput, lock-free enqueue operations.
+- **Configurable backpressure**: Choose between Wait (with timeout), Reject, or DropOldest behaviors.
+- **Power-of-2 partitions**: Partition count must be a power of 2 for efficient bit-masked modulo routing.
+
+## Flush Policy & Persistence
+
+For stateful aggregation scenarios, the `Persistence` namespace provides flush coordination:
+
+```csharp
+using Khaos.Processing.Pipelines.Persistence;
+
+// Create a flush coordinator with multiple policies
+var coordinator = FlushCoordinator.Create<string>()
+    .WithTimeBasedFlush(TimeSpan.FromMinutes(5))   // Flush every 5 minutes
+    .WithCountBasedFlush(1000)                      // Or when 1000 items are dirty
+    .WithMemoryPressureFlush(512 * 1024 * 1024)     // Or at 512 MB memory
+    .WithShutdownFlush()                            // Always flush on shutdown
+    .Build();
+
+// Mark items as dirty when state changes
+coordinator.MarkDirty("session-123");
+coordinator.MarkDirty("session-456");
+
+// Check and flush periodically
+var result = await coordinator.CheckAndFlushAsync(
+    async keys => { /* persist logic */ },
+    cancellationToken);
+
+if (result.Flushed)
+    Console.WriteLine($"Flushed {result.ItemCount} items via {result.TriggeringPolicy}");
+```
+
+Key features:
+- **Policy-based decisions**: Time-based, count-based, memory-pressure, dirty-ratio, external-trigger, and shutdown policies.
+- **Composite policies**: Combine multiple policies with OR semantics via `CompositeFlushPolicy`.
+- **Thread-safe tracking**: Uses `ConcurrentDictionary` for lock-free dirty key tracking.
+- **Testable time**: Accepts `TimeProvider` for deterministic unit testing.
+- **Diagnostics**: `FlushCoordinatorStatistics` provides flush counts and timing.
+
 ## Extending the Package
 
 1. **Create steps** by implementing `IPipelineStep<TIn, TOut>`; use `StepOutcome<T>.Abort()` to short-circuit.
